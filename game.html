@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        body{
+            --next-player: red;
+            margin: 0;
+            padding: 0;
+            position: relative;
+            z-index: 0;
+            background-color: #101010;
+        }
+        body::before{
+            content: '';
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            top: 20px;
+            left: 20px;
+            background-color: var(--next-player);
+            z-index: -1;
+        }
+        .container{
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+        }
+        .grid-box{
+            max-width: 500px;
+            width: 100%;
+            display: grid;
+            gap: 1px;
+        }
+        .grid-item{
+            --bg-color: #ffffff;
+            background-color: var(--bg-color);
+            width: 100%;
+            aspect-ratio: 1;
+            height: auto;
+        }
+        /* .grid-item[data-player="0"]{
+            background-color: red;
+        }
+        .grid-item[data-player="1"]{
+            background-color: blue;
+        }
+        .grid-item[data-player="2"]{
+            background-color: green;
+        }
+        .grid-item[data-player="3"]{
+            background-color: yellow;
+        } */
+        .grid-item span{
+            color: #000000;
+            /* filter: invert(100%) */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="grid-box">
+        </div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script>
+        const players = 4;
+        var currentPlayer = 0;
+        let $board = $('.grid-box');
+        let row = 10;
+        let column = 10;
+
+        $('.grid-box').css('grid-template-columns', 'repeat(' + column + ', 1fr)');
+
+        for (let i = 1; i <= row * column; i++) {
+            $('.grid-box').append('<div class="grid-item"></div>');
+        }
+        function changePLayer(cp){
+            return ++cp % players;
+        }
+
+        function placeItem(box,p){
+            var color;
+            var bodyColor;
+            switch(p){
+                case 0: color = "#ff0000"; bodyColor = "#00ff00"; break;
+                case 1: color = "#00ff00"; bodyColor = "#0000ff"; break;
+                case 2: color = "#0000ff"; bodyColor = "#ffff00"; break;
+                case 3: color = "#ffff00"; bodyColor = "#ff0000"; break;
+            }
+            box.css('--bg-color',color);
+            box.attr('data-player', p);
+            $('body').css('--next-player',bodyColor);
+        }
+
+        function checkIfFilled(box,p){
+            var playerBox = box.attr('data-player') == undefined ? p : box.attr('data-player');
+            // console.log(playerBox);
+            return playerBox == p ? false : true;
+        }
+        
+        function placeNum(box,p,value){
+            value = parseInt(value) || 0;
+            var val = ++value % players;
+            box.attr('data-num',val);
+            box.html('<span>' + val + '</span>');
+        }
+
+        function expandBox(box,index,itemArray,p){
+            let right = itemArray[index + 1];
+            let left = itemArray[index - 1];
+            let top = itemArray[index - column];
+            let bottom = itemArray[index + column];
+            console.log(right,left,top,bottom);
+
+            console.log(p);
+
+            // Ensure right neighbor exists and is in the same row
+            if (right && (index % column !== column - 1)) {
+                placeNum($(right), p, $(right).attr('data-num'));
+                placeItem($(right), p);
+            }
+            // Ensure left neighbor exists and is in the same row
+            if (left && (index % column !== 0)) {
+                placeNum($(left), p, $(left).attr('data-num'));
+                placeItem($(left), p);
+            }
+            // Ensure top neighbor exists
+            if (top) {
+                placeNum($(top), p, $(top).attr('data-num'));
+                placeItem($(top), p);
+            }
+            // Ensure bottom neighbor exists
+            if (bottom) {
+                placeNum($(bottom), p, $(bottom).attr('data-num'));
+                placeItem($(bottom), p);
+            }
+
+            box.removeAttr('data-num');
+            box.removeAttr('data-player');
+            box.css('--bg-color', '#ffffff');
+            box.html('');
+
+        }
+
+        
+        let $item = $('.grid-item');
+        $item.attr('data-num',0);
+
+        $('body').attr('listner',currentPlayer);
+        var disableAfterFirstRound = false;
+
+        $item.each(function(index,item){
+            $(this).on('click',function(){
+                if(checkIfFilled($(this),currentPlayer)){
+                    return;
+                }else if(disableAfterFirstRound && !$(this).attr('data-player')){
+                    return;
+                }
+                var numberInBox = $(this).attr('data-num');
+                placeNum($(this),currentPlayer,numberInBox);
+                placeItem($(this),currentPlayer);
+                currentPlayer = changePLayer(currentPlayer);
+
+                $('body').attr('listner',currentPlayer);
+                if($('body').attr('listner') == 0){
+                    disableAfterFirstRound = true;
+                }
+                if(numberInBox == players - 1){
+                    expandBox($(this),index,$item,currentPlayer);
+                }
+
+                console.log("Current Player: ",currentPlayer);
+            });
+        });
+        
+    </script>
+</body>
+</html>
