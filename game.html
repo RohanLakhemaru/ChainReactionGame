@@ -152,6 +152,8 @@
         $('body').attr('listner',currentPlayer);
         var disableAfterFirstRound = false;
 
+
+        //Added Event Listener
         $item.each(function(index,item){
             $(this).on('click',function(){
                 if(checkIfFilled($(this),currentPlayer)){
