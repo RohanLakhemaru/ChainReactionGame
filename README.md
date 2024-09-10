@@ -1,1 +1,1 @@
-https://rohanlakhemaru.github.io/ChainReactionGame/
+https://rohanlakhemaru.github.io/ChainReactionGame/game.html
