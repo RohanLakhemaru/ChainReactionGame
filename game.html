@@ -71,12 +71,22 @@
         let $board = $('.grid-box');
         let row = 10;
         let column = 10;
+        let chainReactionDelay = 1000;
+        const playerArr = Array.from({ length: players }, (_, i) => i + 1);
+
 
         $('.grid-box').css('grid-template-columns', 'repeat(' + column + ', 1fr)');
 
         for (let i = 1; i <= row * column; i++) {
             $('.grid-box').append('<div class="grid-item"></div>');
         }
+
+        let $item = $('.grid-item');
+        $item.attr('data-num',0);
+
+        $('body').attr('listner',currentPlayer);
+        var disableAfterFirstRound = false;
+
         function changePLayer(cp){
             return ++cp % players;
         }
@@ -108,75 +118,110 @@
             box.html('<span>' + val + '</span>');
         }
 
-        function expandBox(box,index,itemArray,p){
+        function expandBox(box, index, itemArray, p) {
             let right = itemArray[index + 1];
             let left = itemArray[index - 1];
             let top = itemArray[index - column];
             let bottom = itemArray[index + column];
-            console.log(right,left,top,bottom);
-
-            console.log(p);
 
             // Ensure right neighbor exists and is in the same row
             if (right && (index % column !== column - 1)) {
                 placeNum($(right), p, $(right).attr('data-num'));
-                placeItem($(right), p);
+                placeItem($(right), p);  // Use 'p' instead of 'currentPlayer'
+                if ($(right).attr('data-num') == 0) {
+                    setTimeout(function(){
+                        expandBox($(right), index + 1, itemArray, p); // Use index + 1 for the right neighbor
+                    },chainReactionDelay);
+                }
             }
             // Ensure left neighbor exists and is in the same row
             if (left && (index % column !== 0)) {
                 placeNum($(left), p, $(left).attr('data-num'));
-                placeItem($(left), p);
+                placeItem($(left), p);  // Use 'p' instead of 'currentPlayer'
+                if ($(left).attr('data-num') == 0) {
+                    setTimeout(function(){
+                        expandBox($(left), index - 1, itemArray, p); // Use index - 1 for the left neighbor
+                    },chainReactionDelay);
+                }
             }
             // Ensure top neighbor exists
             if (top) {
                 placeNum($(top), p, $(top).attr('data-num'));
-                placeItem($(top), p);
+                placeItem($(top), p);  // Use 'p' instead of 'currentPlayer'
+                if ($(top).attr('data-num') == 0) {
+                    setTimeout(function(){
+                        expandBox($(top), index - column, itemArray, p); // Use index - column for the top neighbor
+                    },chainReactionDelay);
+                }
             }
             // Ensure bottom neighbor exists
             if (bottom) {
                 placeNum($(bottom), p, $(bottom).attr('data-num'));
-                placeItem($(bottom), p);
+                placeItem($(bottom), p);  // Use 'p' instead of 'currentPlayer'
+                if ($(bottom).attr('data-num') == 0) {
+                    setTimeout(function(){
+                        expandBox($(bottom), index + column, itemArray, p); // Use index + column for the bottom neighbor
+                    },chainReactionDelay);
+                }
             }
 
+            // Reset the current box after expanding
             box.removeAttr('data-num');
             box.removeAttr('data-player');
             box.css('--bg-color', '#ffffff');
             box.html('');
-
         }
 
+        function checkPlayersBox(p) {
+            let found = false;
+            $item.each(function() {
+                if ($(this).attr('data-num') == p) {
+                    found = true;
+                    return false; // Exit the loop early if a match is found
+                }
+            });
+            return found;
+        }
+
+
+        // function skipPlayer(){
+        //     if()
+        // }
         
-        let $item = $('.grid-item');
-        $item.attr('data-num',0);
-
-        $('body').attr('listner',currentPlayer);
-        var disableAfterFirstRound = false;
-
+       
 
         //Added Event Listener
-        $item.each(function(index,item){
-            $(this).on('click',function(){
-                if(checkIfFilled($(this),currentPlayer)){
+        $item.each(function(index, item){
+            $(this).on('click', function(){
+                if (checkIfFilled($(this), currentPlayer)) {
                     return;
-                }else if(disableAfterFirstRound && !$(this).attr('data-player')){
+                } else if (disableAfterFirstRound && !$(this).attr('data-player')) {
                     return;
                 }
+
                 var numberInBox = $(this).attr('data-num');
-                placeNum($(this),currentPlayer,numberInBox);
-                placeItem($(this),currentPlayer);
-                currentPlayer = changePLayer(currentPlayer);
+                placeNum($(this), currentPlayer, numberInBox);  // Place the current player's number
+                placeItem($(this), currentPlayer);  // Place the current player's color/item
 
-                $('body').attr('listner',currentPlayer);
-                if($('body').attr('listner') == 0){
-                    disableAfterFirstRound = true;
-                }
-                if(numberInBox == players - 1){
-                    expandBox($(this),index,$item,currentPlayer);
+                // Capture current player before changing it
+                var previousPlayer = currentPlayer;
+                currentPlayer = changePLayer(currentPlayer);  // Change to the next player
+
+                $('body').attr('listner', currentPlayer);  // Update the listener for the next player
+
+                if ($('body').attr('listner') == 0) {
+                    disableAfterFirstRound = true;  // Disable after the first round if needed
                 }
 
-                console.log("Current Player: ",currentPlayer);
+                // Check if the box reaches the maximum number, then expand it
+                if (numberInBox == players - 1) {
+                    expandBox($(this), index, $item, previousPlayer);  // Use previousPlayer for expansion
+                }
+
+                console.log("Current Player: ", currentPlayer);
             });
         });
+
         
     </script>
 </body>
